@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A stellar beat maker",
   "main": "index.js",
+  "homepage": "https://jonfranco224.github.io/drum-machine",
   "scripts": {
     "test": "testing",
     "build": "webpack",
