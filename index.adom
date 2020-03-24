@@ -1,0 +1,186 @@
+const styles = file 'main.css'
+
+var state = {
+    tapped: [
+        [false, false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, false],
+        [false, false, false, false, false, false, false, false]
+    ],
+    instruments: [],
+    names: [
+        'kick', 'snare', 'hi-hat'
+    ],
+    bpm: 130,
+    isPlaying: false,
+    currentColumn: -1
+}
+
+--
+let instruments = [
+    (new Audio('https://raw.githubusercontent.com/n1k0/tinysynth/master/public/audio/kick-classic.wav')),
+    (new Audio('https://raw.githubusercontent.com/n1k0/tinysynth/master/public/audio/snare-block.wav')),
+    (new Audio('https://raw.githubusercontent.com/n1k0/tinysynth/master/public/audio/hihat-digital.wav')),
+    (new Audio('https://raw.githubusercontent.com/n1k0/tinysynth/master/public/audio/openhat-808.wav')),
+    (new Audio('https://raw.githubusercontent.com/n1k0/tinysynth/master/public/audio/tom-acoustic01.wav')),
+    (new Audio('https://raw.githubusercontent.com/n1k0/tinysynth/master/public/audio/tom-acoustic02.wav'))
+]
+
+state.instruments.push(instruments[0]);
+state.instruments.push(instruments[1]);
+state.instruments.push(instruments[2]);
+
+let columnCount = 8
+let timeout
+
+function songLoop () {
+    timeout = setTimeout(function () {
+        let column = (state.currentColumn + 1) % columnCount
+        state.tapped.forEach((row, i) => {
+            if (row[column]) {
+                const pad = state.instruments[i]
+                pad.pause()
+                pad.currentTime = 0
+                pad.play()
+            }
+        })
+        state.currentColumn = column;
+        songLoop()
+    }, 60000 / state.bpm)
+}
+
+function togglePlay (isPlaying) {
+    if (isPlaying) {
+        state.isPlaying = false
+        state.currentColumn = -1
+        clearTimeout(timeout)
+    } else {
+        isPlaying = true
+        currentColumn = -1
+        songLoop()
+    }
+}
+
+function addRow () {
+    state.tapped.push([false, false, false, false, false, false, false, false])
+    state.instruments.push((new Audio('https://s3-us-west-2.amazonaws.com/s.cdpn.io/152714/Kick_11.wav')))
+    state.names.push('kick')
+}
+
+function  deleteRow (rowIndex) {
+    state.tapped.splice(rowIndex, 1)
+    state.instruments.splice(rowIndex, 1)
+    state.names.splice(rowIndex, 1)
+}
+
+function clearRow (rowIndex) {
+    state.tapped[rowIndex] = [false, false, false, false, false, false, false, false]
+}
+
+function changeInstrument (row, instrument) {
+    let instrToReplace
+    let nameToReplace
+
+    switch (instrument) {
+      case 'kick':
+        instrToReplace = instruments[0]
+        nameToReplace = instrument
+        break
+      case 'snare':
+        instrToReplace = instruments[1]
+        nameToReplace = instrument
+        break
+      case 'hi-hat':
+        instrToReplace = instruments[2]
+        nameToReplace = instrument
+        break
+      case 'open-hat':
+        instrToReplace = instruments[3]
+        nameToReplace = instrument
+        break
+      case 'tom1':
+        instrToReplace = instruments[4]
+        nameToReplace = instrument
+        break
+      case 'tom2':
+        instrToReplace = instruments[5]
+        nameToReplace = instrument
+    }
+
+    state.instruments[row] = instrToReplace
+    state.names[row] = nameToReplace
+}
+--
+
+tag Pad [ 
+    var col = props.col
+    var pad = props.pad
+
+    div
+        class={state.tapped[col][pad] ? 'drumpad-active' : 'drumpad'}
+        on:click='state.tapped[col][pad] = !state.tapped[col][pad]' []
+]
+
+tag DrumPad [
+    div [
+        header [
+            h1 "BeatZ"
+            h4 "By Jon Franco"
+        ]
+        div.tools [
+            button
+                on:click="togglePlay(state.isPlaying)"
+                "{{ state.isPlaying ? 'Stop' : 'Play' }}"
+            div.bpm-slider [
+                p "BPM"
+                input
+                    type='range'
+                    min='60'
+                    max='200'
+                    on:change='state.bpm = $e.target.value' []
+            ]
+        ]
+        div.padrows [
+            div []
+            div.column-containers [
+                each (num in [0, 1, 2, 3, 4, 5, 6, 7]) [
+                    div class='{{state.currentColumn == num ? "active" : ""}}' []
+                ]
+            ]
+            each (row, rowIndex in state.tapped) [
+                div.row [
+                    select value={state.names[rowIndex]} on:change='changeInstrument(rowIndex, $e.target.value)' [
+                        option value='kick' 'kick'
+                        option value='snare' 'snare'
+                        option value='hi-hat' 'hi-hat'
+                        option value='open-hat' 'o-hat'
+                        option value='tom1' 'tom 1'
+                        option value='tom2' 'tom 2'
+                    ]
+                    
+                    each (pad, padIndex in row) [
+                        Pad col={rowIndex} pad={padIndex} []
+                    ]
+
+                    button.clear on:click='clearRow(rowIndex)' 'clear'
+                    button.clear on:click='deleteRow(rowIndex)' 'X'
+                ]
+            ]
+        ]
+        button id='addrow' on:click='addRow()' '+ Add Instrument'
+        footer [
+            p [ "Design inspired by " a href='https://n1k0.github.io/tinysynth/' '@n1k0' ]
+            p "Copyright 2020"
+        ]
+    ]
+]
+
+html [
+    head [
+        style "{{styles}}"
+    ]
+    body [
+        div root [
+            DrumPad []
+        ]
+    ]
+]
